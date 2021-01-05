@@ -1,0 +1,4 @@
+/node_modules
+/Logger/Logfiles/*json
+
+passwordTest.html
