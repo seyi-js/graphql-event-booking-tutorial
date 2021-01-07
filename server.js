@@ -1,14 +1,32 @@
 const express = require( 'express' );
 const app = express();
-
+const { graphqlHTTP }  = require( 'express-graphql' );
 const PORT = process.env.PORT || 8000;
-
+const schema = require( './schema' )
+const mongoose = require( 'mongoose' );
+mongoose.set( 'useCreateIndex', true );
 
 //ExpressJson Middleware
 app.use( express.json() );
 
-app.get( '/', ( req, res ) => {
-    res.json('Hello world!')
-})
+app.use( '/graphql', graphqlHTTP( {
+    schema,
+    graphiql: true
+} ) );
 
-app.listen( PORT, () => console.log( `Server started on port ${ PORT }` ) );
+
+//Switch Between DB's in Prod
+( process.env.NODE_ENV !== 'production' ) ? db = 'mongodb://localhost:27017/eventbooking' : process.env.MONGO_URL;
+
+//Connect To Database
+
+mongoose.connect( db, { useUnifiedTopology: true, useNewUrlParser: true } )
+    .then( () => console.log( 'Connected to EventBooking Database' ) )
+    .catch( ( err ) => console.log( `Database Connection Error: ${ err }` ) );
+
+//     const User = require('./Models/user')
+// let user = await User.find({})
+// console.log(user)
+
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT} 🔥`));
