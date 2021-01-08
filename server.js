@@ -2,7 +2,7 @@ const express = require( 'express' );
 const app = express();
 const { graphqlHTTP }  = require( 'express-graphql' );
 const PORT = process.env.PORT || 8000;
-const schema = require( './schema' )
+const schema = require( './graphql/schema/index' )
 const mongoose = require( 'mongoose' );
 mongoose.set( 'useCreateIndex', true );
 
