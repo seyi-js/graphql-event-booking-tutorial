@@ -1,8 +1,14 @@
 const { GraphQLObjectType, GraphQLInt,
     GraphQLSchema, GraphQLString,
     GraphQLNonNull, GraphQLList,GraphQLFloat,GraphQLID } = require( 'graphql' );
-const {getAllEventsResolver,getAllUsersResolver,registerUserResolver,createdEventsResolver} = require('../resolvers/index')
-//EventType
+const { getAllEventsResolver,
+    getAllUsersResolver, registerUserResolver,
+    createdEventsResolver, bookEventResolver, getAllBookingsResolver,
+cancelBookingResolver} = require( '../resolvers/index' )
+
+
+
+
 const EventType = new GraphQLObjectType( {
     name: 'Events',
     fields: () => ( {
@@ -26,6 +32,18 @@ const UserType = new GraphQLObjectType( {
        })
 })
 
+const BookingType = new GraphQLObjectType( {
+    name: 'Bookings',
+    fields: () => ( {
+        _id:{type:new GraphQLNonNull(GraphQLID)},
+        event:{type:new GraphQLNonNull(EventType)},
+        user:{type:new GraphQLNonNull(UserType)},
+        createdAt:{type:new GraphQLNonNull(GraphQLString)},
+        updatedAt:{type:new GraphQLNonNull(GraphQLString)}
+        
+    })
+});
+
 //Root Query
 
 const RootQuery = new GraphQLObjectType( {
@@ -41,6 +59,12 @@ const RootQuery = new GraphQLObjectType( {
             type: new GraphQLList(UserType),
             resolve( parentValue, args ) {
               return getAllUsersResolver()
+            }
+        },
+        bookings: {
+            type: new GraphQLList(BookingType),
+            resolve( parentValue, args ) {
+              return getAllBookingsResolver()
             }
         }
     }
@@ -75,7 +99,26 @@ const Mutation = new GraphQLObjectType(  {
            resolve( parentValue, args ) {
             return registerUserResolver(args)
         }
-       }
+        },
+        bookEvent:{
+            type: BookingType,
+            args: {
+                eventId:{type:GraphQLID}
+            },
+            resolve(parentValue, args ) {
+                return bookEventResolver(args)
+            }
+
+        },
+        cancelBooking: {
+            type: EventType,
+            args: {
+                bookingId:{type:GraphQLID}
+            },
+            resolve(parentValue, args ) {
+                return cancelBookingResolver(args)
+            }
+        }
         
     }
 } );
