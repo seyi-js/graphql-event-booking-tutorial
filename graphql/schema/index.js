@@ -4,8 +4,9 @@ const { GraphQLObjectType, GraphQLInt,
 const { getAllEventsResolver,
     getAllUsersResolver, registerUserResolver,
     createdEventsResolver, bookEventResolver, getAllBookingsResolver,
-cancelBookingResolver} = require( '../resolvers/index' )
+cancelBookingResolver,loginResolver} = require( '../resolvers/index' )
 
+const {verifyIfUserIsAuthenticated} = require('../../helper/helper')
 
 
 
@@ -44,6 +45,16 @@ const BookingType = new GraphQLObjectType( {
     })
 });
 
+const AuthType = new GraphQLObjectType( {
+    name: 'AuthData',
+    fields: () => ( {
+        userId:{type:GraphQLID},
+        token:{type:GraphQLString},
+        tokenExpiration:{type:GraphQLString}
+        
+    })
+});
+
 //Root Query
 
 const RootQuery = new GraphQLObjectType( {
@@ -51,8 +62,10 @@ const RootQuery = new GraphQLObjectType( {
     fields: {
         events: {
             type: new GraphQLList(EventType ),
-            resolve() {
-              return  getAllEventsResolver()
+            resolve(parentValue,args ) {
+                    return  getAllEventsResolver()
+                
+             
             }
         },
         users: {
@@ -63,8 +76,26 @@ const RootQuery = new GraphQLObjectType( {
         },
         bookings: {
             type: new GraphQLList(BookingType),
-            resolve( parentValue, args ) {
-              return getAllBookingsResolver()
+            resolve( parentValue, args,req ) {
+                
+                let response = verifyIfUserIsAuthenticated( req );
+                // console.log(response)
+                if ( response.user ) {
+                    return getAllBookingsResolver()
+                } else {
+                    //Error Message
+                    throw new Error(response.message)
+                }
+            }
+        },
+        login: {
+            type: AuthType,
+            args: {
+                email:{type:new GraphQLNonNull(GraphQLString)},
+                password: { type: new GraphQLNonNull( GraphQLString ) }
+            },
+            resolve( parentvalue, args ) {
+                return loginResolver(args)
             }
         }
     }
@@ -86,8 +117,15 @@ const Mutation = new GraphQLObjectType(  {
                 creator:{type: GraphQLString }
                 
             },
-            resolve(parentValue, args) {
-                return createdEventsResolver(args)
+            resolve(parentValue, args,req) {
+                let response = verifyIfUserIsAuthenticated( req );
+                // console.log(response)
+                if ( response.user ) {
+                    return createdEventsResolver(args,response.user)
+                } else {
+                    //Error Message
+                    throw new Error(JSON.stringify(response))
+                }
              }
         },
         registerUser: {
@@ -97,7 +135,8 @@ const Mutation = new GraphQLObjectType(  {
                 password:{type: new GraphQLNonNull( GraphQLString )}
             },
            resolve( parentValue, args ) {
-            return registerUserResolver(args)
+               return registerUserResolver( args );
+               
         }
         },
         bookEvent:{
@@ -105,8 +144,16 @@ const Mutation = new GraphQLObjectType(  {
             args: {
                 eventId:{type:GraphQLID}
             },
-            resolve(parentValue, args ) {
-                return bookEventResolver(args)
+            resolve( parentValue, args,req ) {
+                let response = verifyIfUserIsAuthenticated( req );
+                // console.log(response)
+                if ( response.user ) {
+
+                    return bookEventResolver( args,response.user );
+                } else {
+                    //Error Message
+                    throw new Error(response.message)
+                }
             }
 
         },
@@ -115,8 +162,16 @@ const Mutation = new GraphQLObjectType(  {
             args: {
                 bookingId:{type:GraphQLID}
             },
-            resolve(parentValue, args ) {
-                return cancelBookingResolver(args)
+            resolve(parentValue, args,req ) {
+                
+                let response = verifyIfUserIsAuthenticated( req );
+                // console.log(response)
+                if ( response.user ) {
+                    return cancelBookingResolver( args );
+                } else {
+                    //Error Message
+                    throw new Error(response.message)
+                }
             }
         }
         

@@ -5,10 +5,10 @@ const PORT = process.env.PORT || 8000;
 const schema = require( './graphql/schema/index' )
 const mongoose = require( 'mongoose' );
 mongoose.set( 'useCreateIndex', true );
-
+const {validateToken} = require('./helper/middleware')
 //ExpressJson Middleware
 app.use( express.json() );
-
+app.use(validateToken)
 app.use( '/graphql', graphqlHTTP( {
     schema,
     graphiql: true

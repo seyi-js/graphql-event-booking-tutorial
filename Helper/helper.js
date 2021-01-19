@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const UserModel = require('../models/user')
 const EventModel = require('../models/event')
-
+const jwt = require( 'jsonwebtoken' );
 
 //@desc Gen Hash
 const genHash = ( data ) => {
@@ -48,5 +48,29 @@ const getSingleEvent = async ( eventId ) => {
     let event = await EventModel.findById( eventId );
     
     return event;
-}
-module.exports ={genHash,creator,getEvents,getSingleEvent}
+};
+
+
+let privateKey = '232fhhsdvhjsvjhsdhfgh4344jjjcsdfjsdkjvhwkej32u32557763443((&%^$##'
+//@desc Genarate Json Web Tokens
+const generateJwtToken = ( id ) => {
+    const token = jwt.sign(
+        { id },
+        `${ privateKey }`,
+        { expiresIn: 60 * 1000 * 60 * 24 } )//Expires in 24hrs 
+       
+    return token;
+};
+
+const verifyIfUserIsAuthenticated = ( req ) => {
+    if ( !req.user || req.errorMessage ) {
+        return req.errorMessage;
+    } else {
+        let response = {
+            user:req.user
+        };
+        return response;
+    }
+};
+
+module.exports ={genHash,creator,getEvents,getSingleEvent,generateJwtToken,verifyIfUserIsAuthenticated}

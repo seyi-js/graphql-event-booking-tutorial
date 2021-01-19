@@ -1,7 +1,8 @@
 const EventModel = require( '../../models/event' );
-const {creator,getEvents,genHash,getSingleEvent} = require('../../helper/helper');
+const {creator,getEvents,genHash,getSingleEvent,generateJwtToken} = require('../../helper/helper');
 const UserModel = require( '../../models/user' );
-const BookingModel = require('../../models/bookings')
+const BookingModel = require( '../../models/bookings' );
+const bcrypt = require('bcryptjs');
 exports.getAllEventsResolver = () => {
       
     return EventModel.find( {} )
@@ -43,22 +44,22 @@ exports.getAllUsersResolver = () => {
         } )
 };
 
-exports.createdEventsResolver = ( args ) => {
+exports.createdEventsResolver = ( args,reqUser ) => {
     let event = new EventModel( {
         title: args.title,
         description: args.description,
         price: args.price,
-        creator: '5ff658fc8a8fdc33a0e1a780'
+        creator: reqUser.id
     } );
 
     return event.save()
         .then( async result => {
             // console.log( result )
             try {
-                let user = await UserModel.findById( '5ff658fc8a8fdc33a0e1a780' );
+                let user = await UserModel.findById( reqUser.id );
                 user.createdEvents.push( result._id );
                 user.save();
-                return { ...result._doc };
+                return { ...result._doc,creator: creator.bind(this, result.creator ) };
             } catch ( error ) {
                 console.log( error )
                 throw error;
@@ -113,11 +114,11 @@ exports.getAllBookingsResolver = async()=>{
     };
 };
 
-exports.bookEventResolver = async ( args ) => {
+exports.bookEventResolver = async ( args,user ) => {
     try {
       
         const booking = new BookingModel( {
-            user: '5ff817dcf9d53e25048fe8e9',
+            user: user.id,
             event: args.eventId
         } );
 
@@ -146,5 +147,34 @@ exports.cancelBookingResolver = async ( args ) => {
     } catch (err) {
         console.log( err );
         throw err;
+    }
+};
+
+exports.loginResolver = async ( args) => {
+    // console.log(req)
+    let { email, password } = args;
+    if ( !email || !password ) {
+        throw new Error('Invalid request.')
+    }
+
+    try {
+        let user = await UserModel.findOne( { email } );
+        if ( !user ) {
+            // return 'User not found'
+            throw new Error( 'User not found.' );
+            
+        }
+        let isEqual = bcrypt.compareSync( password, user.password );
+        if ( !isEqual ) {
+            throw new Error('Incorrect password');
+        }
+
+        let token = generateJwtToken( user._id );
+
+        return {userId:user._id,token,tokenExpiration:'1'}
+
+    } catch (err) {
+        // console.log( err );
+        throw new Error( err );
     }
 }
